@@ -1,5 +1,6 @@
+import json
 import utility
-
+from nltk.translate.bleu_score import corpus_bleu
 
 def accuracy(preds, test):
     total_words = 0
@@ -27,13 +28,34 @@ def main():
     counts = utility.naive_counts(s_train, t_train, 3)
     probs = utility.naive_probs(counts)
 
+    utility.target_probs(t_train)
+
     preds = utility.predict(s_test, probs)
 
     bleu = utility.bleu_score(preds, t_test)
-    print(bleu)
-
     print(accuracy(preds, t_test) * 100)
 
 
+def evaluate():
+    source = utility.read_train_file('train-source.txt')
+    target = utility.read_train_file('train-target.txt')
+
+    # source = utility.clean_dash(source)
+
+    source = source[int(len(source) * 0.8):]
+    target = target[int(len(target) * 0.8):]
+
+    probs = {}
+
+    with open('trans_probs.json', 'r') as infile:
+        probs = json.load(infile)
+
+    preds = utility.predict(source, probs)
+
+    bleu = utility.bleu_score(preds, target, MAX_N=4)
+    print('Custom BLEU: ', bleu)
+    print(accuracy(preds, target) * 100)
+
+
 if __name__ == '__main__':
-    main()
+    evaluate()

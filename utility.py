@@ -1,6 +1,6 @@
-import csv
 from tqdm import tqdm
 import math
+import json
 
 PUNCT = ',.'
 
@@ -29,14 +29,6 @@ def read_train_file(file_name):
     return all_data
 
 
-def split_and_gram():
-    print()
-    # Make all N grams up to some N
-    # Count all occurences of each gram
-    # Each gram with count below some threshold is ignored
-        # Revert to lower gram when that happens
-
-
 def clean_dash(data):
     clean_data = []
 
@@ -45,7 +37,7 @@ def clean_dash(data):
         cur_sent = []
         for i in range(0, len(sentence)-1):
             if skip:
-                skip = False;
+                skip = False
                 continue
             cur_word = sentence[i]
             if cur_word == '-':
@@ -62,10 +54,30 @@ def clean_dash(data):
 
     return clean_data
 
+
+def target_probs(target):
+    counts = {}
+
+    for sentence in tqdm(target, desc='Target counts'):
+        for i in range(0, len(sentence)):
+            if sentence[i] in counts.keys():
+                counts[sentence[i]] += 1
+            else:
+                counts[sentence[i]] = 1
+
+    probs = {}
+
+    for word in counts.keys():
+        probs[word] = counts[word] / sum(list(counts.values()))
+
+    with open('target_probs.json', 'w') as outfile:
+        json.dump(probs, outfile)
+
+
 def naive_counts(source, target, max_edit_check):
     counts = {}
 
-    for i in tqdm(range(0, len(source)), desc='Counting occurences'):
+    for i in tqdm(range(0, len(source)), desc='Counting occurrences'):
         offset = 0
         check_lim = 0
         for j in range(0, len(source[i])):
@@ -76,7 +88,7 @@ def naive_counts(source, target, max_edit_check):
                     check_lim -= 1
 
             if j == len(source[i])-1:
-                    check_lim -= 1
+                check_lim -= 1
 
             if offset+1 == max_edit_check and j > len(target[i]):
                 continue
@@ -122,17 +134,39 @@ def naive_probs(counts):
         for new_key, value in data_dict.items():
             probs[key][new_key] = (counts[key][new_key] / dict_sum)
 
+    with open('trans_probs.json', 'w') as outfile:
+        json.dump(probs, outfile)
+
     return probs
 
 
 def predict(s_test, probs):
     all_preds = []
 
+    trans_weight = 1
+    targ_weight = 0
+
+    with open('target_probs.json') as infile:
+        targ_probs = json.load(infile)
+
     for sentence in tqdm(s_test, desc='Predicting'):
         cur_sent = []
         for word in sentence:
             try:
-                cur_sent.append(max(probs[word], key=probs[word].get))
+                max_prob = 0
+                max_key = ''
+                for key in probs[word]:
+                    if key in targ_probs.keys():
+                        prob = (probs[word][key] * trans_weight) + (targ_probs[key] * targ_weight)
+                    else:
+                        prob = (probs[word][key] * trans_weight)
+
+                    if prob > max_prob:
+                        max_prob = prob
+                        max_key = key
+
+                cur_sent.append(max_key)
+                # cur_sent.append(max(probs[word], key=probs[word].get))
             except KeyError:
                 continue
 
@@ -178,9 +212,7 @@ def bleu_score(source, target, MAX_N=4):
                 continue
             precision *= (len(set(source_grams) & set(target_grams)) / len(source_grams)) ** (1/MAX_N)
 
-        brevity = 0
-
-        if len(source[i]) == len(target[i]):
+        if len(source[i]) > len(target[i]):
             brevity = 1
         else:
             try:
