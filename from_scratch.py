@@ -1,6 +1,7 @@
 import json
 import utility
-from nltk.translate.bleu_score import corpus_bleu
+from nltk.translate.bleu_score import sentence_bleu, corpus_bleu
+
 
 def accuracy(preds, test):
     total_words = 0
@@ -47,13 +48,19 @@ def evaluate():
 
     probs = {}
 
-    with open('trans_probs.json', 'r') as infile:
+    with open('trans_probs_adjust.json', 'r') as infile:
         probs = json.load(infile)
 
     preds = utility.predict(source, probs)
 
+    new_targ = []
+
+    for row in target:
+        new_targ.append([row])
+
     bleu = utility.bleu_score(preds, target, MAX_N=4)
     print('Custom BLEU: ', bleu)
+    print(corpus_bleu(new_targ, preds))
     print(accuracy(preds, target) * 100)
 
 

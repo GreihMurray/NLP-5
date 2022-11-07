@@ -80,8 +80,13 @@ def naive_counts(source, target, max_edit_check):
     for i in tqdm(range(0, len(source)), desc='Counting occurrences'):
         offset = 0
         check_lim = 0
+        skip = False
         for j in range(0, len(source[i])):
             source_word = source[i][j]
+
+            if skip:
+                skip = False
+                continue
 
             if j > 1:
                 if source[i][j-1] in PUNCT:
@@ -100,6 +105,13 @@ def naive_counts(source, target, max_edit_check):
                     dist = min(dist, abs(len(source_word) - len(target[i][t-offset])))
                 dists.append(dist)
 
+            if j+1 != len(target[i]):
+                grams = [''.join(target[i][j:j + 1])]
+            gram_dists = []
+
+            for gram in grams:
+                gram_dists.append(levenshtein(source_word, gram))
+
             if not dists:
                 dists.append(levenshtein(source_word, target[i][-1]))
 
@@ -111,7 +123,11 @@ def naive_counts(source, target, max_edit_check):
             # print((j+dists.index(min(dists))) - (offset - check_lim), source_word)
             # print(source[i])
             # print(target[i])
-            target_word = target[i][(j+dists.index(min(dists))) - (offset - check_lim)]
+            if min(gram_dists) < min(dists):
+                skip = True
+                target_word = grams[grams.index(min(grams))]
+            else:
+                target_word = target[i][(j+dists.index(min(dists))) - (offset - check_lim)]
             # print(target_word)
             if source_word in counts.keys():
                 if target_word in counts[source_word].keys():
@@ -134,7 +150,7 @@ def naive_probs(counts):
         for new_key, value in data_dict.items():
             probs[key][new_key] = (counts[key][new_key] / dict_sum)
 
-    with open('trans_probs.json', 'w') as outfile:
+    with open('trans_probs_adjust.json', 'w') as outfile:
         json.dump(probs, outfile)
 
     return probs
