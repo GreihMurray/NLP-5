@@ -84,33 +84,42 @@ def naive_counts(source, target, max_edit_check):
         for j in range(0, len(source[i])):
             source_word = source[i][j]
 
+            # Checks for fail/break conditions
             if skip:
                 skip = False
                 continue
-
             if j > 1:
                 if source[i][j-1] in PUNCT:
                     check_lim -= 1
-
             if j == len(source[i])-1:
                 check_lim -= 1
-
             if offset+1 == max_edit_check and j > len(target[i]):
                 continue
 
-            dists = []
-            for t in range(j+check_lim, min(j+max_edit_check, len(target[i]))):
-                dist = levenshtein(source_word, target[i][t-offset])
-                if source_word in target[i][t-offset]:
-                    dist = min(dist, abs(len(source_word) - len(target[i][t-offset])))
-                dists.append(dist)
-
+            # 1-to-2 check
             if j+1 != len(target[i]):
                 grams = [''.join(target[i][j:j + 1])]
             gram_dists = []
 
+            # 2-to-1 check
+            if j + 1 != len(source[i]):
+                grams.append(''.join(source[i][j:j+1]))
+
             for gram in grams:
                 gram_dists.append(levenshtein(source_word, gram))
+
+            # if 2-to-1 change source word and set gram_dist to [1000]
+            if gram_dists.index(min(gram_dists)) > 0:
+                source_word = grams[-1]
+                gram_dists = [1000]
+
+            # Check for nearby levenshtein dists for alignment
+            dists = []
+            for t in range(j + check_lim, min(j + max_edit_check, len(target[i]))):
+                dist = levenshtein(source_word, target[i][t - offset])
+                if source_word in target[i][t - offset]:
+                    dist = min(dist, abs(len(source_word) - len(target[i][t - offset])))
+                dists.append(dist)
 
             if not dists:
                 dists.append(levenshtein(source_word, target[i][-1]))
@@ -123,9 +132,11 @@ def naive_counts(source, target, max_edit_check):
             # print((j+dists.index(min(dists))) - (offset - check_lim), source_word)
             # print(source[i])
             # print(target[i])
+
+            # Get best target word
             if min(gram_dists) < min(dists):
                 skip = True
-                target_word = grams[grams.index(min(grams))]
+                target_word = grams[0]
             else:
                 target_word = target[i][(j+dists.index(min(dists))) - (offset - check_lim)]
             # print(target_word)
@@ -150,7 +161,7 @@ def naive_probs(counts):
         for new_key, value in data_dict.items():
             probs[key][new_key] = (counts[key][new_key] / dict_sum)
 
-    with open('trans_probs_adjust.json', 'w') as outfile:
+    with open('trans_probs_both.json', 'w') as outfile:
         json.dump(probs, outfile)
 
     return probs

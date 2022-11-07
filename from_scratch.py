@@ -2,6 +2,12 @@ import json
 import utility
 from nltk.translate.bleu_score import sentence_bleu, corpus_bleu
 
+# trans_probs: no 1-to-2 or 2-to-1 (0.678 BLEU)
+
+# trans_probs_adjust: 1-to-2 no 2-to-1 (0.6797 BLEU)
+
+# trans_probs_both: 1-to-2 and 2-to-1 (0.6794 BLEU)
+
 
 def accuracy(preds, test):
     total_words = 0
@@ -48,7 +54,7 @@ def evaluate():
 
     probs = {}
 
-    with open('trans_probs_adjust.json', 'r') as infile:
+    with open('trans_probs.json', 'r') as infile:
         probs = json.load(infile)
 
     preds = utility.predict(source, probs)
