@@ -24,6 +24,8 @@ def main():
     source = utility.read_train_file('train-source.txt')
     target = utility.read_train_file('train-target.txt')
 
+    utility.save_sents(source, target)
+
     source = utility.clean_dash(source)
 
     s_train = source[:int(len(source) * 0.8)]
@@ -37,7 +39,9 @@ def main():
 
     utility.target_probs(t_train)
 
-    preds = utility.predict(s_test, probs)
+    def_source, def_targ = utility.read_defs()
+
+    preds = utility.predict(s_test, probs, def_source, def_targ)
 
     bleu = utility.bleu_score(preds, t_test)
     print(accuracy(preds, t_test) * 100)
@@ -47,6 +51,8 @@ def evaluate():
     source = utility.read_train_file('train-source.txt')
     target = utility.read_train_file('train-target.txt')
 
+    def_source, def_targ = utility.read_defs()
+
     # source = utility.clean_dash(source)
 
     source = source[int(len(source) * 0.8):]
@@ -54,10 +60,10 @@ def evaluate():
 
     probs = {}
 
-    with open('trans_probs.json', 'r') as infile:
+    with open('trans_probs_both.json', 'r') as infile:
         probs = json.load(infile)
 
-    preds = utility.predict(source, probs)
+    preds = utility.predict(source, probs, def_source, def_targ)
 
     new_targ = []
 

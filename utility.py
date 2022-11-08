@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import math
 import json
+import csv
 
 PUNCT = ',.'
 
@@ -55,6 +56,40 @@ def clean_dash(data):
     return clean_data
 
 
+def strip_punct(sentence):
+    exclude = '.,\'":;()'
+    s = [ch for ch in sentence if ch not in exclude]
+
+    return s
+
+
+def read_defs():
+    def_source = []
+    def_targ = []
+
+    with open('definite.csv', 'r', encoding='utf-8') as infile:
+        csvread = csv.reader(infile)
+
+        for line in tqdm(csvread, desc='Reading definites'):
+            if len(line) > 0:
+                def_source.append(line[0].split(' '))
+                def_targ.append(line[1].split(' '))
+
+    return def_source, def_targ
+
+
+def save_sents(source, target):
+    translates = []
+
+    for i in range(0, len(source)):
+        sent = strip_punct(source[i])
+        translates.append((' '.join(sent), ' '.join(target[i])))
+
+    with open('definite.csv', 'w', encoding='utf-8') as outfile:
+        cwrite = csv.writer(outfile)
+
+        cwrite.writerows(translates)
+
 def target_probs(target):
     counts = {}
 
@@ -103,7 +138,7 @@ def naive_counts(source, target, max_edit_check):
 
             # 2-to-1 check
             if j + 1 != len(source[i]):
-                grams.append(''.join(source[i][j:j+1]))
+                grams.append(''.join(source[i][j:j + 1]))
 
             for gram in grams:
                 gram_dists.append(levenshtein(source_word, gram))
@@ -167,7 +202,7 @@ def naive_probs(counts):
     return probs
 
 
-def predict(s_test, probs):
+def predict(s_test, probs, def_source, def_targ):
     all_preds = []
 
     trans_weight = 1
@@ -178,6 +213,10 @@ def predict(s_test, probs):
 
     for sentence in tqdm(s_test, desc='Predicting'):
         cur_sent = []
+
+        if strip_punct(sentence) in def_source:
+            all_preds.append(def_targ[def_source.index(strip_punct(sentence))])
+            continue
         for word in sentence:
             try:
                 max_prob = 0
