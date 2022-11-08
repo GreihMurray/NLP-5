@@ -47,7 +47,7 @@ def clean_dash(data):
                 if len(cur_sent) < 1:
                     continue
                 else:
-                    cur_word = ''.join([sentence[i-1], sentence[i+1]])
+                    cur_word = ''.join([sentence[i-1], '-', sentence[i+1]])
                     del cur_sent[-1]
                     skip = True
             cur_sent.append(cur_word)
@@ -207,6 +207,7 @@ def predict(s_test, probs, def_source, def_targ):
 
     trans_weight = 1
     targ_weight = 0
+    count = 0
 
     with open('target_probs.json') as infile:
         targ_probs = json.load(infile)
@@ -216,6 +217,7 @@ def predict(s_test, probs, def_source, def_targ):
 
         if strip_punct(sentence) in def_source:
             all_preds.append(def_targ[def_source.index(strip_punct(sentence))])
+            count += 1
             continue
         for word in sentence:
             try:
