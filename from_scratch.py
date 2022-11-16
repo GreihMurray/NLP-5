@@ -24,7 +24,7 @@ def main():
     source = utility.read_train_file('train-source.txt')
     target = utility.read_train_file('train-target.txt')
 
-    source = utility.clean_dash(source)
+    # source = utility.clean_dash(source)
 
     s_train = source[:int(len(source) * 0.8)]
     s_test = source[int(len(source) * 0.8):]
@@ -48,19 +48,15 @@ def main():
 
 
 def evaluate():
-    source = utility.read_train_file('train-source.txt')
-    target = utility.read_train_file('train-target.txt')
+    source = utility.read_train_file('test-source.txt')
+    target = utility.read_train_file('test-target.txt')
 
     def_source, def_targ = utility.read_defs()
 
     # Uncomment below line to disable use of definite translations
     # def_source, def_targ = [], []
 
-    #source = utility.clean_dash(source)
-
-    source = source[int(len(source) * 0.8):]
-
-    target = target[int(len(target) * 0.8):]
+    # source = utility.clean_dash(source)
 
     probs = {}
 
@@ -74,10 +70,8 @@ def evaluate():
     for row in target:
         new_targ.append([row])
 
-    bleu = utility.bleu_score(preds, target, MAX_N=4)
-    print('Custom BLEU: ', bleu)
-    print(corpus_bleu(new_targ, preds))
-    print(accuracy(preds, target) * 100)
+    print('BLEU Score (NLTK):', corpus_bleu(new_targ, preds))
+    print('Accuracy:', accuracy(preds, target) * 100)
 
 
 if __name__ == '__main__':

@@ -5,7 +5,6 @@ import csv
 
 PUNCT = ',.'
 
-
 def read_train_file(file_name):
     all_data = []
     descript = 'Reading ' + file_name
@@ -163,17 +162,20 @@ def naive_counts(source, target, max_edit_check):
                 offset += 1
                 continue
 
-            # print(j, offset, len(target[i]), dists)
-            # print((j+dists.index(min(dists))) - (offset - check_lim), source_word)
-            # print(source[i])
-            # print(target[i])
+            print(j, offset, len(target[i]), dists)
+            print((j+dists.index(min(dists))) - (offset - check_lim), source_word)
+            print(source[i])
+            print(target[i])
 
             # Get best target word
             if min(gram_dists) < min(dists):
                 skip = True
                 target_word = grams[0]
             else:
-                target_word = target[i][(j+dists.index(min(dists))) - (offset - check_lim)]
+                try:
+                    target_word = target[i][(j+dists.index(min(dists))) - (offset - check_lim)]
+                except IndexError:
+                    target_word = target[i][-1]
             # print(target_word)
             if source_word in counts.keys():
                 if target_word in counts[source_word].keys():
